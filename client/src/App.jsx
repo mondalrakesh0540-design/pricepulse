@@ -1,5 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import './App.css'
+
+const API_URL = 'http://localhost:5000/api'
 
 const supportedStores = [
   'amazon.in',
@@ -20,11 +22,54 @@ function isSupportedProductUrl(productUrl) {
   }
 }
 
+function getStoreName(store) {
+  if (store.includes('amazon')) return 'Amazon'
+  if (store.includes('flipkart')) return 'Flipkart'
+  if (store.includes('croma')) return 'Croma'
+
+  return store
+}
+
 function App() {
   const [productUrl, setProductUrl] = useState('')
+  const [products, setProducts] = useState([])
   const [formMessage, setFormMessage] = useState(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
-  const handleSubmit = (event) => {
+  useEffect(() => {
+    let isMounted = true
+
+    async function fetchProducts() {
+      try {
+        const response = await fetch(`${API_URL}/products`)
+        const data = await response.json()
+
+        if (!response.ok) {
+          throw new Error(data.message || 'Unable to load products.')
+        }
+
+        if (isMounted) {
+          setProducts(data.products)
+        }
+      } catch {
+        if (isMounted) {
+          setFormMessage({
+            type: 'error',
+            text: 'Could not connect to the PricePulse server.',
+          })
+        }
+      }
+    }
+
+    fetchProducts()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  const handleSubmit = async (event) => {
     event.preventDefault()
 
     const trimmedUrl = productUrl.trim()
@@ -37,12 +82,66 @@ function App() {
       return
     }
 
-    setFormMessage({
-      type: 'success',
-      text: 'Product link accepted. Price tracking will be added next.',
-    })
+    setIsSubmitting(true)
+    setFormMessage(null)
 
-    setProductUrl('')
+    try {
+      const response = await fetch(`${API_URL}/products`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          url: trimmedUrl,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Unable to add product.')
+      }
+
+      setProducts((currentProducts) => [
+        data.product,
+        ...currentProducts,
+      ])
+
+      setProductUrl('')
+      setFormMessage({
+        type: 'success',
+        text: 'Product added to your PricePulse watchlist.',
+      })
+    } catch (error) {
+      setFormMessage({
+        type: 'error',
+        text: error.message,
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true)
+
+    try {
+      const response = await fetch(`${API_URL}/products`)
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Unable to refresh products.')
+      }
+
+      setProducts(data.products)
+    } catch (error) {
+      setFormMessage({
+        type: 'error',
+        text: error.message,
+      })
+    } finally {
+      setIsRefreshing(false)
+    }
   }
 
   const handleUrlChange = (event) => {
@@ -104,7 +203,9 @@ function App() {
               required
             />
 
-            <button type="submit">Track Product</button>
+            <button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Adding...' : 'Track Product'}
+            </button>
           </form>
 
           {formMessage && (
@@ -125,16 +226,14 @@ function App() {
         <section className="stats-grid">
           <article className="stat-card">
             <span className="stat-icon">📱</span>
-
             <div>
               <p>Tracked Products</p>
-              <h3>0</h3>
+              <h3>{products.length}</h3>
             </div>
           </article>
 
           <article className="stat-card">
             <span className="stat-icon">📉</span>
-
             <div>
               <p>Price Drops</p>
               <h3>0</h3>
@@ -143,7 +242,6 @@ function App() {
 
           <article className="stat-card">
             <span className="stat-icon">💰</span>
-
             <div>
               <p>Total Savings</p>
               <h3>₹0</h3>
@@ -158,20 +256,70 @@ function App() {
               <h2>Tracked Products</h2>
             </div>
 
-            <button type="button" className="refresh-button">
-              ↻ Refresh Prices
+            <button
+              type="button"
+              className="refresh-button"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+            >
+              {isRefreshing ? 'Refreshing...' : '↻ Refresh Products'}
             </button>
           </div>
 
-          <div className="empty-state">
-            <div className="empty-icon">📦</div>
-            <h3>No products tracked yet</h3>
+          {products.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-icon">📦</div>
+              <h3>No products tracked yet</h3>
+              <p>
+                Paste your first mobile product link above to start monitoring
+                its price.
+              </p>
+            </div>
+          ) : (
+            <div className="products-grid">
+              {products.map((product) => (
+                <article className="product-card" key={product.id}>
+                  <div className="product-card-header">
+                    <span className="product-store">
+                      {getStoreName(product.store)}
+                    </span>
+                    <span className="tracking-status">● Tracking</span>
+                  </div>
 
-            <p>
-              Paste your first mobile product link above to start monitoring its
-              price.
-            </p>
-          </div>
+                  <h3>Mobile Product</h3>
+
+                  <a
+                    className="product-link"
+                    href={product.url}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {product.url}
+                  </a>
+
+                  <div className="product-price-row">
+                    <div>
+                      <p>Current price</p>
+                      <strong>
+                        {product.currentPrice
+                          ? `₹${product.currentPrice}`
+                          : 'Waiting for first check'}
+                      </strong>
+                    </div>
+
+                    <div>
+                      <p>Lowest price</p>
+                      <strong>
+                        {product.lowestPrice
+                          ? `₹${product.lowestPrice}`
+                          : '—'}
+                      </strong>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
         </section>
       </main>
 
