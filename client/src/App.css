@@ -388,7 +388,28 @@ footer {
   text-align: center;
   border-top: 1px solid rgba(255, 255, 255, 0.07);
 }
+.form-message {
+  width: min(760px, 100%);
+  margin-top: 14px;
+  padding: 11px 16px;
+  border: 1px solid;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+}
 
+.form-message.success {
+  color: #72e6a5;
+  border-color: rgba(74, 222, 128, 0.28);
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.form-message.error {
+  color: #ff9090;
+  border-color: rgba(248, 113, 113, 0.3);
+  background: rgba(239, 68, 68, 0.1);
+}
 @media (max-width: 760px) {
   .navbar {
     padding: 14px 18px;

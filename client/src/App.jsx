@@ -1,8 +1,56 @@
+import { useState } from 'react'
 import './App.css'
 
+const supportedStores = [
+  'amazon.in',
+  'amzn.in',
+  'flipkart.com',
+  'croma.com',
+]
+
+function isSupportedProductUrl(productUrl) {
+  try {
+    const hostname = new URL(productUrl).hostname.toLowerCase()
+
+    return supportedStores.some(
+      (store) => hostname === store || hostname.endsWith(`.${store}`),
+    )
+  } catch {
+    return false
+  }
+}
+
 function App() {
+  const [productUrl, setProductUrl] = useState('')
+  const [formMessage, setFormMessage] = useState(null)
+
   const handleSubmit = (event) => {
     event.preventDefault()
+
+    const trimmedUrl = productUrl.trim()
+
+    if (!isSupportedProductUrl(trimmedUrl)) {
+      setFormMessage({
+        type: 'error',
+        text: 'Please enter a valid Amazon, Flipkart or Croma product link.',
+      })
+      return
+    }
+
+    setFormMessage({
+      type: 'success',
+      text: 'Product link accepted. Price tracking will be added next.',
+    })
+
+    setProductUrl('')
+  }
+
+  const handleUrlChange = (event) => {
+    setProductUrl(event.target.value)
+
+    if (formMessage) {
+      setFormMessage(null)
+    }
   }
 
   return (
@@ -20,7 +68,12 @@ function App() {
         <nav className="nav-links">
           <a href="#dashboard">Dashboard</a>
           <a href="#products">Tracked Products</a>
-          <button type="button" className="notification-button">
+
+          <button
+            type="button"
+            className="notification-button"
+            aria-label="Notifications"
+          >
             🔔
           </button>
         </nav>
@@ -32,7 +85,7 @@ function App() {
 
           <h2>
             Track mobile prices.
-            <span> Save more money.</span>
+            <span>Save more money.</span>
           </h2>
 
           <p className="hero-description">
@@ -43,13 +96,26 @@ function App() {
           <form className="tracking-form" onSubmit={handleSubmit}>
             <input
               type="url"
+              value={productUrl}
+              onChange={handleUrlChange}
               placeholder="Paste Amazon, Flipkart or Croma product link"
               aria-label="Product link"
+              aria-describedby="form-message"
               required
             />
 
             <button type="submit">Track Product</button>
           </form>
+
+          {formMessage && (
+            <p
+              id="form-message"
+              className={`form-message ${formMessage.type}`}
+              role={formMessage.type === 'error' ? 'alert' : 'status'}
+            >
+              {formMessage.text}
+            </p>
+          )}
 
           <p className="supported-stores">
             Supported stores: Amazon · Flipkart · Croma
@@ -59,6 +125,7 @@ function App() {
         <section className="stats-grid">
           <article className="stat-card">
             <span className="stat-icon">📱</span>
+
             <div>
               <p>Tracked Products</p>
               <h3>0</h3>
@@ -67,6 +134,7 @@ function App() {
 
           <article className="stat-card">
             <span className="stat-icon">📉</span>
+
             <div>
               <p>Price Drops</p>
               <h3>0</h3>
@@ -75,6 +143,7 @@ function App() {
 
           <article className="stat-card">
             <span className="stat-icon">💰</span>
+
             <div>
               <p>Total Savings</p>
               <h3>₹0</h3>
@@ -97,6 +166,7 @@ function App() {
           <div className="empty-state">
             <div className="empty-icon">📦</div>
             <h3>No products tracked yet</h3>
+
             <p>
               Paste your first mobile product link above to start monitoring its
               price.
