@@ -2,6 +2,7 @@ const express = require('express')
 const cors = require('cors')
 const dotenv = require('dotenv')
 const mysql = require('mysql2/promise')
+const { scrapeProduct } = require('./scraper')
 
 dotenv.config()
 
@@ -57,12 +58,24 @@ function formatProduct(row) {
   }
 }
 
+/*
+|--------------------------------------------------------------------------
+| Root route
+|--------------------------------------------------------------------------
+*/
+
 app.get('/', (req, res) => {
   res.status(200).json({
     success: true,
     message: 'Welcome to PricePulse API',
   })
 })
+
+/*
+|--------------------------------------------------------------------------
+| Health check
+|--------------------------------------------------------------------------
+*/
 
 app.get('/api/health', async (req, res) => {
   try {
@@ -81,6 +94,12 @@ app.get('/api/health', async (req, res) => {
     })
   }
 })
+
+/*
+|--------------------------------------------------------------------------
+| Get all tracked products
+|--------------------------------------------------------------------------
+*/
 
 app.get('/api/products', async (req, res) => {
   try {
@@ -115,6 +134,12 @@ app.get('/api/products', async (req, res) => {
   }
 })
 
+/*
+|--------------------------------------------------------------------------
+| Add and scrape a mobile product
+|--------------------------------------------------------------------------
+*/
+
 app.post('/api/products', async (req, res) => {
   const productUrl =
     typeof req.body.url === 'string' ? req.body.url.trim() : ''
@@ -128,20 +153,77 @@ app.post('/api/products', async (req, res) => {
     })
   }
 
+  let connection
+
   try {
-    const [result] = await pool.execute(
+    const [existingRows] = await pool.execute(
+      `
+        SELECT id
+        FROM products
+        WHERE url = ?
+        LIMIT 1
+      `,
+      [productUrl],
+    )
+
+    if (existingRows.length > 0) {
+      return res.status(409).json({
+        success: false,
+        message: 'This product is already being tracked.',
+      })
+    }
+
+    /*
+     * Playwright দিয়ে product name ও current price বের করা হবে।
+     */
+    const scrapedProduct = await scrapeProduct(productUrl)
+
+    connection = await pool.getConnection()
+    await connection.beginTransaction()
+
+    /*
+     * Product database-এ save করা।
+     */
+    const [result] = await connection.execute(
       `
         INSERT INTO products (
           url,
           store,
-          product_name
+          product_name,
+          current_price,
+          previous_price,
+          lowest_price,
+          last_checked_at
         )
-        VALUES (?, ?, ?)
+        VALUES (?, ?, ?, ?, NULL, ?, NOW())
       `,
-      [productUrl, store, 'Mobile Product'],
+      [
+        productUrl,
+        store,
+        scrapedProduct.productName,
+        scrapedProduct.currentPrice,
+        scrapedProduct.currentPrice,
+      ],
     )
 
-    const [rows] = await pool.execute(
+    /*
+     * প্রথম price check price_history table-এ save করা।
+     */
+    await connection.execute(
+      `
+        INSERT INTO price_history (
+          product_id,
+          price
+        )
+        VALUES (?, ?)
+      `,
+      [result.insertId, scrapedProduct.currentPrice],
+    )
+
+    /*
+     * সদ্য save হওয়া product আবার database থেকে নেওয়া।
+     */
+    const [rows] = await connection.execute(
       `
         SELECT
           id,
@@ -160,12 +242,22 @@ app.post('/api/products', async (req, res) => {
       [result.insertId],
     )
 
+    await connection.commit()
+
     return res.status(201).json({
       success: true,
-      message: 'Product added successfully.',
+      message: 'Mobile added with its current price.',
       product: formatProduct(rows[0]),
     })
   } catch (error) {
+    if (connection) {
+      try {
+        await connection.rollback()
+      } catch (rollbackError) {
+        console.error('Rollback failed:', rollbackError.message)
+      }
+    }
+
     if (error.code === 'ER_DUP_ENTRY') {
       return res.status(409).json({
         success: false,
@@ -175,12 +267,27 @@ app.post('/api/products', async (req, res) => {
 
     console.error('Unable to add product:', error.message)
 
-    return res.status(500).json({
+    const isProductValidationError =
+      error.message.includes('does not appear to be a mobile') ||
+      error.message.includes('Could not detect') ||
+      error.message.includes('blocked the automatic price check')
+
+    return res.status(isProductValidationError ? 422 : 500).json({
       success: false,
-      message: 'Unable to add the product.',
+      message: error.message || 'Unable to add the product.',
     })
+  } finally {
+    if (connection) {
+      connection.release()
+    }
   }
 })
+
+/*
+|--------------------------------------------------------------------------
+| Route not found
+|--------------------------------------------------------------------------
+*/
 
 app.use((req, res) => {
   res.status(404).json({
@@ -188,6 +295,12 @@ app.use((req, res) => {
     message: 'API route not found.',
   })
 })
+
+/*
+|--------------------------------------------------------------------------
+| Start server after MySQL connection
+|--------------------------------------------------------------------------
+*/
 
 async function startServer() {
   const requiredVariables = [
@@ -205,11 +318,13 @@ async function startServer() {
     console.error(
       `Missing environment variables: ${missingVariables.join(', ')}`,
     )
+
     process.exit(1)
   }
 
   try {
     const connection = await pool.getConnection()
+
     await connection.ping()
     connection.release()
 

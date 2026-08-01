@@ -22,12 +22,36 @@ function isSupportedProductUrl(productUrl) {
   }
 }
 
-function getStoreName(store) {
-  if (store.includes('amazon')) return 'Amazon'
-  if (store.includes('flipkart')) return 'Flipkart'
-  if (store.includes('croma')) return 'Croma'
+function getStoreName(store = '') {
+  if (store.includes('amazon')) {
+    return 'Amazon'
+  }
 
-  return store
+  if (store.includes('flipkart')) {
+    return 'Flipkart'
+  }
+
+  if (store.includes('croma')) {
+    return 'Croma'
+  }
+
+  return store || 'Store'
+}
+
+function formatPrice(price, fallbackText) {
+  if (price === null || price === undefined) {
+    return fallbackText
+  }
+
+  const numericPrice = Number(price)
+
+  if (!Number.isFinite(numericPrice)) {
+    return fallbackText
+  }
+
+  return `₹${numericPrice.toLocaleString('en-IN', {
+    maximumFractionDigits: 2,
+  })}`
 }
 
 function App() {
@@ -79,6 +103,7 @@ function App() {
         type: 'error',
         text: 'Please enter a valid Amazon, Flipkart or Croma product link.',
       })
+
       return
     }
 
@@ -108,6 +133,7 @@ function App() {
       ])
 
       setProductUrl('')
+
       setFormMessage({
         type: 'success',
         text: 'Product added to your PricePulse watchlist.',
@@ -124,6 +150,7 @@ function App() {
 
   const handleRefresh = async () => {
     setIsRefreshing(true)
+    setFormMessage(null)
 
     try {
       const response = await fetch(`${API_URL}/products`)
@@ -134,6 +161,11 @@ function App() {
       }
 
       setProducts(data.products)
+
+      setFormMessage({
+        type: 'success',
+        text: 'Tracked products refreshed successfully.',
+      })
     } catch (error) {
       setFormMessage({
         type: 'error',
@@ -197,14 +229,14 @@ function App() {
               type="url"
               value={productUrl}
               onChange={handleUrlChange}
-              placeholder="Paste Amazon, Flipkart or Croma product link"
+              placeholder="Paste Amazon, Flipkart or Croma mobile link"
               aria-label="Product link"
               aria-describedby="form-message"
               required
             />
 
             <button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Adding...' : 'Track Product'}
+              {isSubmitting ? 'Checking Product...' : 'Track Product'}
             </button>
           </form>
 
@@ -226,6 +258,7 @@ function App() {
         <section className="stats-grid">
           <article className="stat-card">
             <span className="stat-icon">📱</span>
+
             <div>
               <p>Tracked Products</p>
               <h3>{products.length}</h3>
@@ -234,6 +267,7 @@ function App() {
 
           <article className="stat-card">
             <span className="stat-icon">📉</span>
+
             <div>
               <p>Price Drops</p>
               <h3>0</h3>
@@ -242,6 +276,7 @@ function App() {
 
           <article className="stat-card">
             <span className="stat-icon">💰</span>
+
             <div>
               <p>Total Savings</p>
               <h3>₹0</h3>
@@ -269,7 +304,9 @@ function App() {
           {products.length === 0 ? (
             <div className="empty-state">
               <div className="empty-icon">📦</div>
+
               <h3>No products tracked yet</h3>
+
               <p>
                 Paste your first mobile product link above to start monitoring
                 its price.
@@ -283,16 +320,22 @@ function App() {
                     <span className="product-store">
                       {getStoreName(product.store)}
                     </span>
-                    <span className="tracking-status">● Tracking</span>
+
+                    <span className="tracking-status">
+                      ● Tracking
+                    </span>
                   </div>
 
-                  <h3>Mobile Product</h3>
+                  <h3>
+                    {product.productName || 'Mobile Product'}
+                  </h3>
 
                   <a
                     className="product-link"
                     href={product.url}
                     target="_blank"
                     rel="noreferrer"
+                    title={product.url}
                   >
                     {product.url}
                   </a>
@@ -300,19 +343,20 @@ function App() {
                   <div className="product-price-row">
                     <div>
                       <p>Current price</p>
+
                       <strong>
-                        {product.currentPrice
-                          ? `₹${product.currentPrice}`
-                          : 'Waiting for first check'}
+                        {formatPrice(
+                          product.currentPrice,
+                          'Waiting for first check',
+                        )}
                       </strong>
                     </div>
 
                     <div>
                       <p>Lowest price</p>
+
                       <strong>
-                        {product.lowestPrice
-                          ? `₹${product.lowestPrice}`
-                          : '—'}
+                        {formatPrice(product.lowestPrice, '—')}
                       </strong>
                     </div>
                   </div>
