@@ -1,121 +1,114 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
 import './App.css'
 
 function App() {
-  const [count, setCount] = useState(0)
+  const handleSubmit = (event) => {
+    event.preventDefault()
+  }
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
+    <div className="app">
+      <header className="navbar">
+        <a className="brand" href="/">
+          <span className="brand-icon">📉</span>
+
+          <div>
+            <h1>PricePulse</h1>
+            <p>Never miss a price drop</p>
+          </div>
+        </a>
+
+        <nav className="nav-links">
+          <a href="#dashboard">Dashboard</a>
+          <a href="#products">Tracked Products</a>
+          <button type="button" className="notification-button">
+            🔔
+          </button>
+        </nav>
+      </header>
+
+      <main className="main-content">
+        <section className="hero-section" id="dashboard">
+          <div className="hero-badge">SMART PRICE TRACKING</div>
+
+          <h2>
+            Track mobile prices.
+            <span> Save more money.</span>
+          </h2>
+
+          <p className="hero-description">
+            Add a product link and PricePulse will notify you whenever its price
+            decreases—even by ₹1.
           </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
 
-      <div className="ticks"></div>
+          <form className="tracking-form" onSubmit={handleSubmit}>
+            <input
+              type="url"
+              placeholder="Paste Amazon, Flipkart or Croma product link"
+              aria-label="Product link"
+              required
+            />
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+            <button type="submit">Track Product</button>
+          </form>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+          <p className="supported-stores">
+            Supported stores: Amazon · Flipkart · Croma
+          </p>
+        </section>
+
+        <section className="stats-grid">
+          <article className="stat-card">
+            <span className="stat-icon">📱</span>
+            <div>
+              <p>Tracked Products</p>
+              <h3>0</h3>
+            </div>
+          </article>
+
+          <article className="stat-card">
+            <span className="stat-icon">📉</span>
+            <div>
+              <p>Price Drops</p>
+              <h3>0</h3>
+            </div>
+          </article>
+
+          <article className="stat-card">
+            <span className="stat-icon">💰</span>
+            <div>
+              <p>Total Savings</p>
+              <h3>₹0</h3>
+            </div>
+          </article>
+        </section>
+
+        <section className="products-section" id="products">
+          <div className="section-heading">
+            <div>
+              <p className="section-label">YOUR WATCHLIST</p>
+              <h2>Tracked Products</h2>
+            </div>
+
+            <button type="button" className="refresh-button">
+              ↻ Refresh Prices
+            </button>
+          </div>
+
+          <div className="empty-state">
+            <div className="empty-icon">📦</div>
+            <h3>No products tracked yet</h3>
+            <p>
+              Paste your first mobile product link above to start monitoring its
+              price.
+            </p>
+          </div>
+        </section>
+      </main>
+
+      <footer>
+        <p>© 2026 PricePulse · Built by Rakesh Mondal</p>
+      </footer>
+    </div>
   )
 }
 
