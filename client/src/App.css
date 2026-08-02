@@ -602,3 +602,150 @@ footer {
     grid-template-columns: 1fr;
   }
 }
+.notification-wrapper {
+  position: relative;
+}
+
+.notification-button {
+  position: relative;
+}
+
+.notification-count {
+  min-width: 19px;
+  height: 19px;
+  padding: 0 5px;
+  position: absolute;
+  top: -6px;
+  right: -7px;
+  display: grid;
+  place-items: center;
+  border: 2px solid #070b16;
+  border-radius: 999px;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 800;
+  background: #ef4444;
+}
+
+.notification-panel {
+  width: min(390px, calc(100vw - 28px));
+  max-height: 480px;
+  position: absolute;
+  top: 54px;
+  right: 0;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 20px;
+  background: #10172a;
+  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.55);
+}
+
+.notification-panel-header {
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.notification-panel-header p {
+  margin-bottom: 4px;
+  color: #7d70ff;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.3px;
+}
+
+.notification-panel-header h3 {
+  font-size: 18px;
+}
+
+.notification-panel-header button {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 9px;
+  color: #aeb8d0;
+  font-size: 22px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.notification-list {
+  max-height: 390px;
+  overflow-y: auto;
+}
+
+.notification-item {
+  padding: 17px 20px;
+  display: flex;
+  gap: 13px;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.notification-icon {
+  width: 39px;
+  height: 39px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border-radius: 12px;
+  background: rgba(34, 197, 94, 0.12);
+}
+
+.notification-item h4 {
+  margin-bottom: 6px;
+  overflow: hidden;
+  font-size: 13px;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notification-item p {
+  color: #9eabc5;
+  font-size: 13px;
+}
+
+.notification-item p strong {
+  color: #72e6a5;
+}
+
+.notification-item span {
+  display: block;
+  margin-top: 5px;
+  color: #64df98;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.no-notifications {
+  min-height: 170px;
+  padding: 30px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 12px;
+  color: #7e89a2;
+  text-align: center;
+}
+
+.no-notifications span {
+  font-size: 30px;
+}
+
+.last-checked {
+  margin-top: 18px;
+  padding-top: 14px;
+  color: #66728c;
+  font-size: 11px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+@media (max-width: 760px) {
+  .notification-panel {
+    position: fixed;
+    top: 76px;
+    right: 14px;
+  }
+}
